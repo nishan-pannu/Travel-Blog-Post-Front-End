@@ -92,7 +92,7 @@ const ProfilePage = ({ user, onViewPost, currentUserId }) => {
           width: '100px',
           height: '100px',
           borderRadius: '50%',
-          backgroundColor: '#007bff',
+          backgroundColor: '#4ea1db',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -103,7 +103,7 @@ const ProfilePage = ({ user, onViewPost, currentUserId }) => {
         }}>
           {user.profile_picture ? (
             <img 
-              src={user.profile_picture} 
+              src={user.profile_picture || 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop'}
               alt="Profile"
               style={{
                 width: '100%',
@@ -172,7 +172,7 @@ const ProfilePage = ({ user, onViewPost, currentUserId }) => {
         <button style={{
           flex: 1,
           padding: '10px',
-          backgroundColor: '#007bff',
+          backgroundColor: '#4ea1db',
           color: 'white',
           border: 'none',
           borderRadius: '6px',
@@ -248,7 +248,7 @@ const ProfilePage = ({ user, onViewPost, currentUserId }) => {
                 >
                   {post.picture_url ? (
                     <img
-                      src={post.picture_url}
+                      src={post.picture_url || 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop'}
                       alt={post.title}
                       style={{
                         width: '100%',
@@ -257,7 +257,7 @@ const ProfilePage = ({ user, onViewPost, currentUserId }) => {
                       }}
                       onError={(e) => {
                         // If image fails to load, show placeholder
-                        e.target.style.display = 'none';
+                        e.target.style.display = 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop';
                         e.target.nextSibling.style.display = 'flex';
                       }}
                     />
@@ -265,7 +265,7 @@ const ProfilePage = ({ user, onViewPost, currentUserId }) => {
                   
                   {/* Placeholder for missing/failed images */}
                   <div style={{
-                    display: post.picture_url ? 'none' : 'flex',
+                    display: post.picture_url ? 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop' : 'flex',
                     width: '100%',
                     height: '100%',
                     alignItems: 'center',

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { LikeButton, CommentButton, CommentsModal } from './LikesCommentsSystem';
 
-const PostDetailPage = ({ postId, onBackToHome, onEditPost, currentUserId }) => {
+const TravelBlogPostDetail = ({ postId, onBackToHome, currentUserId }) => {
   const [post, setPost] = useState(null);
   const [days, setDays] = useState([]);
-  const [rating, setRating] = useState(null); // Single rating, not array
+  const [rating, setRating] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
     const fetchPostDaysAndRating = async () => {
@@ -24,17 +26,16 @@ const PostDetailPage = ({ postId, onBackToHome, onEditPost, currentUserId }) => 
           const daysData = await daysResponse.json();
           setDays(daysData);
         } else {
-          setDays([]); // No days found, that's okay
+          setDays([]);
         }
 
         // Fetch rating for this post
         const ratingResponse = await fetch(`http://localhost:3000/api/v1/posts/${postId}/ratings`);
         if (ratingResponse.ok) {
           const ratingData = await ratingResponse.json();
-          // Since your controller returns a single rating object, not an array
           setRating(ratingData);
         } else {
-          setRating(null); // No rating found, that's okay
+          setRating(null);
         }
 
         setLoading(false);
@@ -49,6 +50,26 @@ const PostDetailPage = ({ postId, onBackToHome, onEditPost, currentUserId }) => 
     }
   }, [postId]);
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long'
+    });
+  };
+
+  const getCostDisplay = (cost) => {
+    if (!cost) return '';
+    const costMap = {
+      'Budget': '$',
+      'Mid-range': '$$', 
+      'Luxury': '$$$',
+      'Ultra-luxury': '$$$$'
+    };
+    return costMap[cost] || cost;
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -57,31 +78,10 @@ const PostDetailPage = ({ postId, onBackToHome, onEditPost, currentUserId }) => 
     );
   }
 
-  if (error) {
+  if (error || !post) {
     return (
       <div style={{ textAlign: 'center', padding: '40px', color: 'red' }}>
-        <p>Error: {error}</p>
-        <button 
-          onClick={onBackToHome}
-          style={{ 
-            color: '#007bff', 
-            background: 'none', 
-            border: 'none', 
-            textDecoration: 'underline',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}
-        >
-          ← Back to Home
-        </button>
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div style={{ textAlign: 'center', padding: '40px' }}>
-        <p>Post not found</p>
+        <p>Error: {error || 'Post not found'}</p>
         <button 
           onClick={onBackToHome}
           style={{ 
@@ -100,104 +100,325 @@ const PostDetailPage = ({ postId, onBackToHome, onEditPost, currentUserId }) => 
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      {/* Back to Home Link */}
-      <button 
-        onClick={onBackToHome}
-        style={{ 
-          color: '#007bff', 
-          background: 'none', 
-          border: 'none', 
-          textDecoration: 'underline',
-          cursor: 'pointer',
-          marginBottom: '20px',
-          display: 'inline-block',
-          fontSize: '16px'
-        }}
-      >
-        ← Back to All Posts
-      </button>
-
-      {/* Post Details */}
+    <div style={{
+      maxWidth: '1200px',
+      margin: '0 auto',
+      backgroundColor: '#f5f5f5',
+      minHeight: '100vh',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      {/* Header */}
       <div style={{
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        padding: '30px',
-        backgroundColor: '#f9f9f9',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-        marginBottom: '30px'
+        backgroundColor: 'white',
+        padding: '20px 40px',
+        borderBottom: '1px solid #e0e0e0',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        {/* Post Header */}
-        <div style={{ marginBottom: '20px' }}>
-          <h1 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '32px' }}>
-            {post.title || 'Untitled Post'}
-          </h1>
-          <div style={{ 
-            fontSize: '16px', 
-            color: '#666',
+        <h1 style={{
+          margin: 0,
+          fontSize: '28px',
+          fontWeight: '500',
+          color: '#333'
+        }}>
+          Welcome to Travel Blog
+        </h1>
+        
+        {/* Navigation */}
+        <div style={{
+          display: 'flex',
+          gap: '30px',
+          alignItems: 'center',
+          color: '#666',
+          fontSize: '16px'
+        }}>
+          <span style={{ cursor: 'pointer' }} onClick={onBackToHome}>Home</span>
+          
+          {/* Profile */}
+          <div style={{
             display: 'flex',
-            gap: '20px',
-            flexWrap: 'wrap'
+            alignItems: 'center',
+            gap: '8px'
           }}>
-            {post.author && <span><strong>By:</strong> {post.author}</span>}
-            {post.stayed_at && <span><strong>🏨 Stayed at:</strong> {post.stayed_at}</span>}
-            {post.trip_date && (
-              <span><strong>📅 Trip Date:</strong> {new Date(post.trip_date).toLocaleDateString()}</span>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: '#4ea1db',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}>
+              👤
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{
+        display: 'flex',
+        gap: '40px',
+        padding: '40px',
+        backgroundColor: 'white',
+        margin: '20px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+      }}>
+        
+        {/* Left Content */}
+        <div style={{ flex: '2' }}>
+          {/* Post Header */}
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{
+              fontSize: '36px',
+              fontWeight: '600',
+              margin: '0 0 15px 0',
+              color: '#333',
+              lineHeight: '1.2'
+            }}>
+              {post.title}
+            </h2>
+            
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '20px',
+              color: '#666',
+              fontSize: '14px',
+              marginBottom: '20px'
+            }}>
+              <span>By: {post.author}</span>
+              <span>Published: {formatDate(post.trip_date || post.created_at)}</span>
+            </div>
+
+            {/* Like and Comment Buttons */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              marginBottom: '20px',
+              paddingBottom: '20px',
+              borderBottom: '1px solid #e9ecef'
+            }}>
+              <LikeButton
+                postId={post.id}
+                initialLikeCount={post.like_count || 0}
+                initialLiked={post.liked_by_current_user || false}
+                currentUserId={currentUserId}
+              />
+              
+              <CommentButton
+                commentCount={post.comment_count || 0}
+                onClick={() => setShowComments(true)}
+              />
+            </div>        
+            
+          </div>
+
+          {/* Introduction */}
+          <div style={{ marginBottom: '30px' }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              margin: '0 0 10px 0'
+            }}>
+              Introduction:
+            </h3>
+            <p style={{
+              fontSize: '16px',
+              lineHeight: '1.6',
+              color: '#333',
+              margin: 0
+            }}>
+              {post.intro || 'No description available for this trip.'}
+            </p>
+          </div>
+
+          {/* Days Breakdown */}
+          <div>
+            {days.length > 0 ? (
+              days.map((day) => (
+                <div key={day.id} style={{ marginBottom: '25px' }}>
+                  <h3 style={{
+                    fontSize: '24px',
+                    fontWeight: '600',
+                    margin: '0 0 15px 0',
+                    color: '#333'
+                  }}>
+                    Day {day.day_number} - {day.intro || day.day_intro || 'Exploring'}
+                  </h3>
+                  <div style={{
+                    fontSize: '16px',
+                    lineHeight: '1.8',
+                    color: '#333'
+                  }}>
+                    {day.description || day.day_description || 'No activities listed for this day.'}
+                  </div>
+                  {(day.picture || day.day_picture_url) && (
+                    <div style={{ marginTop: '15px' }}>
+                      <img
+                        src={day.picture || day.day_picture_url}
+                        alt={`Day ${day.day_number}`}
+                        style={{
+                          maxWidth: '100%',
+                          height: 'auto',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div style={{ 
+                padding: '20px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                textAlign: 'center',
+                color: '#666'
+              }}>
+                <p>No daily itinerary available for this trip.</p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Post Image */}
-        {post.picture_url && (
-          <div style={{ marginBottom: '20px' }}>
-            <img 
-              src={post.picture_url} 
-              alt={post.title || 'Travel post'}
+        {/* Right Sidebar */}
+        <div style={{ flex: '1' }}>
+          {/* Cover Image */}
+          <div style={{
+            marginBottom: '30px',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}>
+            <img
+              src={post.picture_url || 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop'}
+              alt={post.title}
               style={{
                 width: '100%',
-                maxHeight: '400px',
-                objectFit: 'cover',
-                borderRadius: '8px'
+                height: '200px',
+                objectFit: 'cover'
+              }}
+              onError={(e) => {
+                e.target.src = 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop';
               }}
             />
           </div>
-        )}
 
-        {/* Post Content */}
-        <div style={{ marginBottom: '20px' }}>
-          <p style={{ 
-            lineHeight: '1.8', 
-            margin: '0',
-            color: '#444',
-            fontSize: '18px'
-          }}>
-            {post.intro || 'No content available'}
-          </p>
-        </div>
+          {/* Rating Card */}
+          {rating && (
+            <div style={{
+              border: '2px solid #333',
+              borderRadius: '8px',
+              padding: '20px',
+              backgroundColor: '#f9f9f9'
+            }}>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                marginBottom: '15px',
+                textAlign: 'center'
+              }}>
+                OVERALL RATING: <span style={{ fontSize: '24px', color: '#333' }}>{rating.overall}</span>
+              </div>
 
-        {/* Engagement Stats */}
-        <div style={{ 
-          display: 'flex',
-          gap: '25px',
-          fontSize: '16px',
-          color: '#666',
-          borderTop: '1px solid #eee',
-          paddingTop: '15px',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', gap: '25px', flex: 1 }}>
-            {post.like_count !== undefined && <span>❤️ {post.like_count} likes</span>}
-            {post.comment_count !== undefined && <span>💬 {post.comment_count} comments</span>}
-            {post.anonymous && <span>👤 Anonymous Post</span>}
-          </div>
-          
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                fontSize: '14px'
+              }}>
+                {rating.food && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Food Rating:</span>
+                    <strong>{rating.food}</strong>
+                  </div>
+                )}
+                
+                {rating.safety && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Safety Rating:</span>
+                    <strong>{rating.safety}</strong>
+                  </div>
+                )}
+                
+                {rating.cost && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Cost:</span>
+                    <strong>{getCostDisplay(rating.cost)}</strong>
+                  </div>
+                )}
+                
+                {rating.transportation && (
+                  <div style={{ marginTop: '10px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '5px' }}>Transportation:</div>
+                    <div style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                      {rating.transportation}
+                    </div>
+                  </div>
+                )}
+                
+                {rating.visit_again && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginTop: '10px',
+                    fontWeight: '600'
+                  }}>
+                    <span>Visit Again?</span>
+                    <span>{rating.visit_again}</span>
+                  </div>
+                )}
+
+                {rating.summary && (
+                  <div style={{ marginTop: '15px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '8px' }}>Summary:</div>
+                    <div style={{ 
+                      fontSize: '13px', 
+                      lineHeight: '1.4',
+                      fontStyle: 'italic',
+                      color: '#555'
+                    }}>
+                      "{rating.summary}"
+                    </div>
+                  </div>
+                )}
+
+                {rating.tags && (
+                  <div style={{ marginTop: '10px' }}>
+                    <span style={{
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      fontWeight: '500'
+                    }}>
+                      #{rating.tags}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Edit/Delete buttons for post owner */}
           {currentUserId === post.author_id && (
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ 
+              marginTop: '20px',
+              display: 'flex', 
+              gap: '10px' 
+            }}>
               <button
-                onClick={() => onEditPost(postId)}
+                onClick={() => alert('Edit functionality would go here')}
                 style={{
-                  padding: '6px 12px',
+                  flex: 1,
+                  padding: '8px 12px',
                   backgroundColor: '#007bff',
                   color: 'white',
                   border: 'none',
@@ -224,7 +445,8 @@ const PostDetailPage = ({ postId, onBackToHome, onEditPost, currentUserId }) => 
                   }
                 }}
                 style={{
-                  padding: '6px 12px',
+                  flex: 1,
+                  padding: '8px 12px',
                   backgroundColor: '#dc3545',
                   color: 'white',
                   border: 'none',
@@ -237,225 +459,32 @@ const PostDetailPage = ({ postId, onBackToHome, onEditPost, currentUserId }) => 
               </button>
             </div>
           )}
+
+          {/* No Rating Message */}
+          {!rating && (
+            <div style={{
+              border: '2px dashed #ccc',
+              borderRadius: '8px',
+              padding: '20px',
+              textAlign: 'center',
+              color: '#666'
+            }}>
+              <p style={{ margin: 0 }}>No rating available for this trip.</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Rating Section */}
-      {rating && (
-        <div style={{
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          padding: '30px',
-          backgroundColor: '#fff3cd',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-          marginBottom: '30px'
-        }}>
-          <h2 style={{ 
-            color: '#333', 
-            marginBottom: '20px',
-            fontSize: '28px',
-            borderBottom: '2px solid #ffc107',
-            paddingBottom: '10px'
-          }}>
-            Trip Rating & Review
-          </h2>
-
-          {/* Overall Rating */}
-          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-            <div style={{ 
-              fontSize: '48px', 
-              fontWeight: 'bold', 
-              color: '#007bff',
-              marginBottom: '5px'
-            }}>
-              {rating.overall}/10
-            </div>
-            <div style={{ fontSize: '18px', color: '#666' }}>Overall Rating</div>
-          </div>
-
-          {/* Rating Categories Grid */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '15px',
-            marginBottom: '25px',
-            padding: '20px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px'
-          }}>
-            {rating.food && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '16px' }}>🍽️ Food:</span>
-                <strong style={{ fontSize: '18px', color: '#007bff' }}>{rating.food}/10</strong>
-              </div>
-            )}
-            {rating.safety && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '16px' }}>🛡️ Safety:</span>
-                <strong style={{ fontSize: '18px', color: '#007bff' }}>{rating.safety}/10</strong>
-              </div>
-            )}
-            {rating.cost && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '16px' }}>💰 Cost:</span>
-                <strong style={{ fontSize: '18px', color: '#007bff' }}>{rating.cost}</strong>
-              </div>
-            )}
-            {rating.climate && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '16px' }}>🌤️ Climate:</span>
-                <strong style={{ fontSize: '18px', color: '#007bff' }}>{rating.climate}</strong>
-              </div>
-            )}
-          </div>
-
-          {/* Transportation & Visit Again */}
-          <div style={{ marginBottom: '20px' }}>
-            {rating.transportation && (
-              <p style={{ margin: '8px 0', fontSize: '16px', color: '#555' }}>
-                <strong>🚌 Transportation:</strong> {rating.transportation}
-              </p>
-            )}
-            {rating.visit_again && (
-              <p style={{ margin: '8px 0', fontSize: '16px', color: '#555' }}>
-                <strong>🔄 Would visit again:</strong> {rating.visit_again}
-              </p>
-            )}
-          </div>
-
-          {/* Summary */}
-          {rating.summary && (
-            <div style={{ 
-              backgroundColor: '#e9ecef',
-              padding: '20px',
-              borderRadius: '8px',
-              marginBottom: '15px'
-            }}>
-              <h4 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '20px' }}>Review Summary:</h4>
-              <p style={{ 
-                margin: '0',
-                lineHeight: '1.6',
-                color: '#555',
-                fontSize: '16px'
-              }}>
-                {rating.summary}
-              </p>
-            </div>
-          )}
-
-          {/* Tags */}
-          {rating.tags && (
-            <div style={{ textAlign: 'center' }}>
-              <span style={{
-                backgroundColor: '#007bff',
-                color: 'white',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}>
-                #{rating.tags}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Days Section */}
-      {days.length > 0 && (
-        <div>
-          <h2 style={{ 
-            color: '#333', 
-            marginBottom: '20px',
-            fontSize: '28px',
-            borderBottom: '2px solid #007bff',
-            paddingBottom: '10px'
-          }}>
-            Day-by-Day Itinerary ({days.length} {days.length === 1 ? 'day' : 'days'})
-          </h2>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-            {days.map((day) => (
-              <div 
-                key={day.id}
-                style={{
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '8px',
-                  padding: '25px',
-                  backgroundColor: '#fff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-              >
-                <div style={{ marginBottom: '15px' }}>
-                  <h3 style={{ 
-                    margin: '0 0 10px 0', 
-                    color: '#007bff',
-                    fontSize: '24px'
-                  }}>
-                    Day {day.number}
-                  </h3>
-                  {day.intro && (
-                    <p style={{ 
-                      margin: '0 0 10px 0', 
-                      fontSize: '16px', 
-                      color: '#666',
-                      fontStyle: 'italic'
-                    }}>
-                      📍 {day.intro}
-                    </p>
-                  )}
-                </div>
-                
-                {day.picture && (
-                  <div style={{ marginBottom: '15px' }}>
-                    <img 
-                      src={day.picture} 
-                      alt={`Day ${day.number}`}
-                      style={{
-                        width: '100%',
-                        maxHeight: '300px',
-                        objectFit: 'cover',
-                        borderRadius: '6px'
-                      }}
-                    />
-                  </div>
-                )}
-                
-                {day.description && (
-                  <div style={{ 
-                    margin: '0',
-                    lineHeight: '1.6',
-                    color: '#555',
-                    whiteSpace: 'pre-line',
-                    fontSize: '16px',
-                    backgroundColor: '#f8f9fa',
-                    padding: '15px',
-                    borderRadius: '6px'
-                  }}>
-                    {day.description}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {days.length === 0 && (
-        <div style={{
-          textAlign: 'center',
-          padding: '40px',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '8px',
-          border: '1px dashed #ccc'
-        }}>
-          <p style={{ margin: '0', color: '#666', fontSize: '18px' }}>
-            No daily itinerary available for this trip yet.
-          </p>
-        </div>
-      )}
+      {/* Comments Modal - Outside everything for proper z-index */}
+      <CommentsModal
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+        postId={post.id}
+        postTitle={post.title}
+        currentUserId={currentUserId}
+      />
     </div>
   );
 };
 
-export default PostDetailPage;
+export default TravelBlogPostDetail;

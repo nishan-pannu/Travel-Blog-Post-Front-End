@@ -5,12 +5,13 @@ const BottomNavigation = ({ currentView, onNavigate, user }) => {
     { 
       id: 'home', 
       label: 'Home', 
-      icon: '🏠' 
+      icon: '⌂' 
     },
     { 
       id: 'search', 
       label: 'Search', 
       icon: '🔍' 
+      // ⌕ another option for emoji
     },
     { 
       id: 'create', 

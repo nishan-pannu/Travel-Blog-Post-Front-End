@@ -77,9 +77,9 @@ const TravelPosts = ({ onViewPost }) => {
                   flexWrap: 'wrap'
                 }}>
                   {post.author && <span>By: {post.author}</span>}
-                  {post.stayed_at && <span>🏨 {post.stayed_at}</span>}
+                  {post.stayed_at && <span>📍 {post.stayed_at}</span>}
                   {post.trip_date && (
-                    <span>📅 {new Date(post.trip_date).toLocaleDateString()}</span>
+                    <span>🗓️ {new Date(post.trip_date).toLocaleDateString()}</span>
                   )}
                 </div>
               </div>
@@ -88,7 +88,7 @@ const TravelPosts = ({ onViewPost }) => {
               {post.picture_url && (
                 <div style={{ marginBottom: '15px' }}>
                   <img 
-                    src={post.picture_url} 
+                    src={post.picture_url || 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop'} 
                     alt={post.title || 'Travel post'}
                     style={{
                       width: '100%',
@@ -143,7 +143,7 @@ const TravelPosts = ({ onViewPost }) => {
                 color: '#666',
                 alignItems: 'center'
               }}>
-                {post.like_count !== undefined && <span>❤️ {post.like_count} likes</span>}
+                {post.like_count !== undefined && <span>♡ {post.like_count} likes</span>}
                 {post.comment_count !== undefined && <span>💬 {post.comment_count} comments</span>}
                 {post.anonymous && <span>👤 Anonymous Post</span>}
                 
